@@ -1,8 +1,12 @@
 package blockchain
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"time"
+
+	"github.com/stinkymonkeyph/gopher-blocks/constants"
 )
 
 type Block struct {
@@ -29,4 +33,19 @@ func (b *Block) ToJson() string {
 	}
 
 	return string(bb)
+}
+
+func (b *Block) Hash() string {
+
+	bs, err := json.Marshal(b)
+
+	if err != nil {
+		panic("Something went wrong while serializing block object")
+	}
+
+	sum := sha256.Sum256(bs)
+	hex := hex.EncodeToString(sum[:32])
+	hex = constants.HEX_PREFIX + hex
+
+	return hex
 }
