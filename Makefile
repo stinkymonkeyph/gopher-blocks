@@ -4,5 +4,5 @@
 test:
 	go test -v ./...
 
-run:
+run-main:
 	go run .
