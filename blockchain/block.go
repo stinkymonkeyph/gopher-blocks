@@ -36,7 +36,6 @@ func (b *Block) ToJson() string {
 }
 
 func (b *Block) Hash() string {
-
 	bs, err := json.Marshal(b)
 
 	if err != nil {
@@ -48,4 +47,16 @@ func (b *Block) Hash() string {
 	hex = constants.HEX_PREFIX + hex
 
 	return hex
+}
+
+func (b *Block) AddTransactionToTheBlock(txn *Transaction) {
+	isValid := txn.VerifyTransaction()
+
+	if isValid {
+		txn.Status = constants.STATUS_SUCCESS
+	} else {
+		txn.Status = constants.STATUS_FAILED
+	}
+
+	b.Transactions = append(b.Transactions, txn)
 }

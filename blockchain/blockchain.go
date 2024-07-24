@@ -1,6 +1,10 @@
 package blockchain
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/stinkymonkeyph/gopher-blocks/constants"
+)
 
 type Blockchain struct {
 	TransactionPool []*Transaction `json:"transaction_pool"`
@@ -23,4 +27,9 @@ func (bc *Blockchain) ToJSON() string {
 	}
 
 	return string(bbc)
+}
+
+func (bc *Blockchain) AddTransactionToTransactionPool(txn *Transaction) {
+	txn.Status = constants.STATUS_PENDING
+	bc.TransactionPool = append(bc.TransactionPool, txn)
 }

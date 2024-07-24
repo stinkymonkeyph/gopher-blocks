@@ -15,5 +15,4 @@ func main() {
 	block := blockchain.NewBlock("0x0", 0)
 	bc := blockchain.NewBlockchain(block)
 	log.Print(bc.ToJSON())
-
 }
