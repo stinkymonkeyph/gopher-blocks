@@ -55,6 +55,7 @@ func (bc *Blockchain) AddBlock(b *Block) {
 
 func (bc *Blockchain) ProofOfWorkMining(minerAddress string) {
 	nonce := 0
+	log.Println("Starting Proof of Work")
 	for {
 		prevHash := bc.Blocks[len(bc.Blocks)-1].Hash()
 		guessBlock := NewBlock(prevHash, nonce)
@@ -68,10 +69,14 @@ func (bc *Blockchain) ProofOfWorkMining(minerAddress string) {
 		guessHash := guessBlock.Hash()
 
 		if zeroes == guessHash[2:2+constants.MINING_DIFFICULTY] {
+			log.Println("Found solution")
+			log.Printf("Mining Difficulty is %d", constants.MINING_DIFFICULTY)
+			log.Printf("Hash Solution: %s", guessHash)
 			rewardTxn := NewTransaction(constants.BLOCKCHAIN_REWARD_ADDRESS, minerAddress, constants.MINING_REWARD, []byte{})
+			rewardTxn.Status = constants.STATUS_SUCCESS
 			guessBlock.Transactions = append(guessBlock.Transactions, rewardTxn)
 			bc.AddBlock(guessBlock)
-			log.Printf(bc.ToJSON(), "\n\n")
+			log.Printf("%s \n\n", bc.ToJSON())
 			nonce = 0
 			continue
 		}
