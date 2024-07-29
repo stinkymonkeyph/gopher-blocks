@@ -11,4 +11,6 @@ const (
 	CURRENCY_NAME             = "gopher"
 	DECIMAL                   = 100
 	BLOCKCHAIN_REWARD_ADDRESS = "Gopher_Reward_Pool"
+	DB_PATH                   = "./data"
+	DB_KEY                    = "blockchain_data"
 )

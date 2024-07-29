@@ -51,6 +51,12 @@ func (bc *Blockchain) AddBlock(b *Block) {
 	}
 
 	bc.Blocks = append(bc.Blocks, b)
+
+	err := PutIntoDb(bc)
+
+	if err != nil {
+		log.Panicf("Something went wrong while saving state to database, halting entire process %s", err)
+	}
 }
 
 func (bc *Blockchain) ProofOfWorkMining(minerAddress string) {
