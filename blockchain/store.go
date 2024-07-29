@@ -7,8 +7,19 @@ import (
 	"github.com/stinkymonkeyph/gopher-blocks/constants"
 )
 
-func PutIntoDb(bc *Blockchain) error {
+func openDb() (*badger.DB, error) {
 	db, err := badger.Open(badger.DefaultOptions(constants.DB_PATH))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func PutIntoDb(bc *Blockchain) error {
+
+	db, err := openDb()
 
 	if err != nil {
 		return err
@@ -27,17 +38,13 @@ func PutIntoDb(bc *Blockchain) error {
 		return err
 	})
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func ReadFromDb() (Blockchain, error) {
 	var bc Blockchain
 
-	db, err := badger.Open(badger.DefaultOptions(constants.DB_PATH))
+	db, err := openDb()
 
 	if err != nil {
 		return bc, err
@@ -63,9 +70,5 @@ func ReadFromDb() (Blockchain, error) {
 		return nil
 	})
 
-	if err != nil {
-		return bc, err
-	}
-
-	return bc, nil
+	return bc, err
 }
