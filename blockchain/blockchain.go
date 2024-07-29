@@ -14,7 +14,16 @@ type Blockchain struct {
 }
 
 func NewBlockchain(genesisBlock *Block) *Blockchain {
-	bc := new(Blockchain)
+	state, err := ReadFromDb()
+	bc := &Blockchain{}
+
+	if err != nil {
+		bc = new(Blockchain)
+	} else {
+		log.Println("Found existing blockchain state, persisting state from datastore")
+		bc = &state
+	}
+
 	bc.TransactionPool = []*Transaction{}
 	bc.Blocks = append(bc.Blocks, genesisBlock)
 
