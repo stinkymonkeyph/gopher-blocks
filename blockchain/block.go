@@ -50,13 +50,16 @@ func (b *Block) Hash() string {
 }
 
 func (b *Block) AddTransactionToTheBlock(txn *Transaction) {
-	isValid := txn.VerifyTransaction()
+	if txn.Status == constants.STATUS_PENDING {
+		isValid := txn.VerifyTransaction()
 
-	if isValid {
-		txn.Status = constants.STATUS_SUCCESS
-	} else {
-		txn.Status = constants.STATUS_FAILED
+		if isValid {
+			txn.Status = constants.STATUS_SUCCESS
+		} else {
+			txn.Status = constants.STATUS_FAILED
+		}
+
+		b.Transactions = append(b.Transactions, txn)
+
 	}
-
-	b.Transactions = append(b.Transactions, txn)
 }

@@ -11,6 +11,12 @@ import (
 type Blockchain struct {
 	TransactionPool []*Transaction `json:"transaction_pool"`
 	Blocks          []*Block       `json:"block_chain"`
+	WalletIndex     *WalletIndex
+}
+
+func (bc *Blockchain) Airdrop(address string) {
+	txn := NewTransaction(constants.BLOCKCHAIN_AIRDROP_ADDRESS, address, constants.AIRDROP_AMOUNT, []byte{})
+	bc.AddTransactionToTransactionPool(txn)
 }
 
 func NewBlockchain(genesisBlock *Block) *Blockchain {
@@ -19,13 +25,19 @@ func NewBlockchain(genesisBlock *Block) *Blockchain {
 
 	if err != nil {
 		bc = new(Blockchain)
+		bc.TransactionPool = []*Transaction{}
+		bc.Blocks = append(bc.Blocks, genesisBlock)
+		bc.WalletIndex = NewWalletIndex()
+		err := PutIntoDb(bc)
+
+		if err != nil {
+			log.Panicf(err.Error())
+		}
+
 	} else {
 		log.Println("Found existing blockchain state, persisting state from datastore")
 		bc = &state
 	}
-
-	bc.TransactionPool = []*Transaction{}
-	bc.Blocks = append(bc.Blocks, genesisBlock)
 
 	return bc
 }
@@ -34,7 +46,7 @@ func (bc *Blockchain) ToJSON() string {
 	bbc, err := json.Marshal(bc)
 
 	if err != nil {
-		panic("Something went wrong while serializing blockchain object")
+		log.Panic(err.Error())
 	}
 
 	return string(bbc)
@@ -43,12 +55,23 @@ func (bc *Blockchain) ToJSON() string {
 func (bc *Blockchain) AddTransactionToTransactionPool(txn *Transaction) {
 	txn.Status = constants.STATUS_PENDING
 	bc.TransactionPool = append(bc.TransactionPool, txn)
+	err := PutIntoDb(bc)
+	if err != nil {
+		log.Default().Panicf(err.Error())
+	}
 }
 
 func (bc *Blockchain) AddBlock(b *Block) {
 	m := map[string]bool{}
-	for _, txn := range b.Transactions {
+
+	nextBlockHeight := len(bc.Blocks)
+
+	for index, txn := range b.Transactions {
 		m[txn.TransactioHash] = true
+		balance := bc.WalletIndex.CalculateBalance(txn.From)
+		log.Printf("\n\nsender balance -> %d \n\n", balance)
+		bc.WalletIndex.AddTransaction(txn.From, nextBlockHeight, index, txn)
+		bc.WalletIndex.AddTransaction(txn.To, nextBlockHeight, index, txn)
 	}
 
 	for idx, txn := range bc.TransactionPool {
@@ -64,36 +87,48 @@ func (bc *Blockchain) AddBlock(b *Block) {
 	err := PutIntoDb(bc)
 
 	if err != nil {
-		log.Panicf("Something went wrong while saving state to database, halting entire process %s", err)
+		log.Panic(err.Error())
 	}
 }
 
-func (bc *Blockchain) ProofOfWorkMining(minerAddress string) {
-	nonce := 0
-	log.Println("Starting Proof of Work")
-	for {
-		prevHash := bc.Blocks[len(bc.Blocks)-1].Hash()
-		guessBlock := NewBlock(prevHash, nonce)
+func (bc *Blockchain) LastBlock() *Block {
+	return bc.Blocks[len(bc.Blocks)-1]
+}
 
-		for _, txn := range bc.TransactionPool {
-			tx := NewTransaction(txn.From, txn.To, txn.Value, txn.Data)
-			guessBlock.AddTransactionToTheBlock(tx)
-		}
-
-		zeroes := strings.Repeat("0", constants.MINING_DIFFICULTY)
-		guessHash := guessBlock.Hash()
-
-		if zeroes == guessHash[2:2+constants.MINING_DIFFICULTY] {
-			log.Println("Found solution")
-			log.Printf("Mining Difficulty is %d", constants.MINING_DIFFICULTY)
-			log.Printf("Hash Solution: %s", guessHash)
-			rewardTxn := NewTransaction(constants.BLOCKCHAIN_REWARD_ADDRESS, minerAddress, constants.MINING_REWARD, []byte{})
-			rewardTxn.Status = constants.STATUS_SUCCESS
-			guessBlock.Transactions = append(guessBlock.Transactions, rewardTxn)
-			bc.AddBlock(guessBlock)
-			log.Printf("%s \n\n", bc.ToJSON())
-			nonce = 0
-			continue
-		}
+func (bc *Blockchain) CopyTransactionPool() []*Transaction {
+	t := make([]*Transaction, 0)
+	for _, txn := range bc.TransactionPool {
+		t = append(t, NewTransaction(txn.From, txn.To, txn.Value, txn.Data))
 	}
+	return t
+}
+
+func (bc *Blockchain) ValidProof(nonce int, previousHash string, transactions []*Transaction, difficulty int) bool {
+	zeroes := strings.Repeat("0", difficulty)
+	guessBlock := &Block{PrevHash: previousHash, Timestamp: 0, Nonce: nonce, Transactions: transactions}
+	guessHash := guessBlock.Hash()
+	return zeroes == guessHash[2:2+constants.MINING_DIFFICULTY]
+}
+
+func (bc *Blockchain) ProofOfWork() (int, []*Transaction) {
+	t := bc.CopyTransactionPool()
+	previousHash := bc.LastBlock().Hash()
+	nonce := 0
+
+	for !bc.ValidProof(nonce, previousHash, t, constants.MINING_DIFFICULTY) {
+		nonce += 1
+	}
+
+	return nonce, t
+}
+
+func (bc *Blockchain) Mining() bool {
+	log.Println("Start proof of work")
+	nonce, txns := bc.ProofOfWork()
+	previousHash := bc.LastBlock().Hash()
+	block := NewBlock(previousHash, nonce)
+	block.Transactions = txns
+	bc.AddBlock(block)
+	log.Println("Found solution")
+	return true
 }
