@@ -9,9 +9,10 @@ import (
 )
 
 type Blockchain struct {
-	TransactionPool []*Transaction `json:"transaction_pool"`
-	Blocks          []*Block       `json:"block_chain"`
-	WalletIndex     *WalletIndex
+	TransactionPool  []*Transaction `json:"transaction_pool"`
+	Blocks           []*Block       `json:"block_chain"`
+	WalletIndex      *WalletIndex
+	TransactionIndex *TransactionIndex
 }
 
 func (bc *Blockchain) Airdrop(address string) {
@@ -28,6 +29,7 @@ func NewBlockchain(genesisBlock *Block) *Blockchain {
 		bc.TransactionPool = []*Transaction{}
 		bc.Blocks = append(bc.Blocks, genesisBlock)
 		bc.WalletIndex = NewWalletIndex()
+		bc.TransactionIndex = NewTransactionIndex()
 		err := PutIntoDb(bc)
 
 		if err != nil {
@@ -72,6 +74,7 @@ func (bc *Blockchain) AddBlock(b *Block) {
 		log.Printf("\n\nsender balance -> %d \n\n", balance)
 		bc.WalletIndex.AddTransaction(txn.From, nextBlockHeight, index, txn)
 		bc.WalletIndex.AddTransaction(txn.To, nextBlockHeight, index, txn)
+		bc.TransactionIndex.AddTransaction(txn.TransactioHash, index, nextBlockHeight)
 	}
 
 	for idx, txn := range bc.TransactionPool {
