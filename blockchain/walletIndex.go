@@ -5,7 +5,7 @@ import "log"
 type WalletTransactionIndex struct {
 	BlockHeight      int          `json:"block_height"`
 	TransactionIndex int          `json:"transaction_index"`
-	Transaction      *Transaction `json:transactions"`
+	Transaction      *Transaction `json:"transactions"`
 }
 
 type WalletIndex struct {
@@ -46,4 +46,16 @@ func (w *WalletIndex) CalculateBalance(address string) int {
 	}
 
 	return bal
+}
+
+func (w *WalletIndex) GetWalletTransactions(address string) []*Transaction {
+	t := make([]*Transaction, 0)
+
+	if w.Transactions[address] != nil {
+		for _, txi := range w.Transactions[address] {
+			t = append(t, txi.Transaction)
+		}
+	}
+
+	return t
 }
