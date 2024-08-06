@@ -68,7 +68,12 @@ func (bc *Blockchain) AddBlock(b *Block) {
 
 	nextBlockHeight := len(bc.Blocks)
 
+	if b.PrevHash != bc.LastBlock().Hash() {
+		log.Panic("Trying to add an invalid block, halting entire process")
+	}
+
 	for index, txn := range b.Transactions {
+		txn.Status = constants.STATUS_SUCCESS
 		m[txn.TransactioHash] = true
 		balance := bc.WalletIndex.CalculateBalance(txn.From)
 		log.Printf("\n\nsender balance -> %d \n\n", balance)
@@ -101,7 +106,13 @@ func (bc *Blockchain) LastBlock() *Block {
 func (bc *Blockchain) CopyTransactionPool() []*Transaction {
 	t := make([]*Transaction, 0)
 	for _, txn := range bc.TransactionPool {
-		t = append(t, NewTransaction(txn.From, txn.To, txn.Value, txn.Data))
+		senderBalance := bc.WalletIndex.CalculateBalance(txn.From)
+		if txn.From != constants.BLOCKCHAIN_AIRDROP_ADDRESS {
+			if senderBalance < int(txn.Value) {
+				txn.Status = constants.STATUS_FAILED
+			}
+		}
+		t = append(t, txn)
 	}
 	return t
 }
@@ -126,12 +137,10 @@ func (bc *Blockchain) ProofOfWork() (int, []*Transaction) {
 }
 
 func (bc *Blockchain) Mining() bool {
-	log.Println("Start proof of work")
 	nonce, txns := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
 	block := NewBlock(previousHash, nonce)
 	block.Transactions = txns
 	bc.AddBlock(block)
-	log.Println("Found solution")
 	return true
 }
