@@ -1,6 +1,10 @@
 package blockchain
 
-import "log"
+import (
+	"log"
+
+	"github.com/stinkymonkeyph/gopher-blocks/constants"
+)
 
 type WalletTransactionIndex struct {
 	BlockHeight      int          `json:"block_height"`
@@ -38,9 +42,9 @@ func (w *WalletIndex) CalculateBalance(address string) int {
 	bal := 0
 
 	for _, txn := range w.Transactions[address] {
-		if txn.Transaction.From == address {
+		if txn.Transaction.From == address && txn.Transaction.Status == constants.STATUS_SUCCESS {
 			bal -= int(txn.Transaction.Value)
-		} else if txn.Transaction.To == address {
+		} else if txn.Transaction.To == address && txn.Transaction.Status == constants.STATUS_SUCCESS {
 			bal += int(txn.Transaction.Value)
 		}
 	}
