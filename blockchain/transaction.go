@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"math"
 
 	"github.com/stinkymonkeyph/gopher-blocks/constants"
@@ -32,7 +33,7 @@ func (t *Transaction) ToJSON() string {
 	tb, err := json.Marshal(t)
 
 	if err != nil {
-		panic("Something went wrong while serializing transaction object")
+		log.Panicf(err.Error())
 	}
 
 	return string(tb)
@@ -56,7 +57,7 @@ func (t *Transaction) Hash() string {
 	ts, err := json.Marshal(t)
 
 	if err != nil {
-		panic("Something went wrong while serializing transaction object")
+		log.Panicf(err.Error())
 	}
 
 	sum := sha256.Sum256(ts)
