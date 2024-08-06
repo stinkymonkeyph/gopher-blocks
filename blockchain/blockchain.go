@@ -73,7 +73,6 @@ func (bc *Blockchain) AddBlock(b *Block) {
 	}
 
 	for index, txn := range b.Transactions {
-		txn.Status = constants.STATUS_SUCCESS
 		m[txn.TransactioHash] = true
 		balance := bc.WalletIndex.CalculateBalance(txn.From)
 		log.Printf("\n\nsender balance -> %d \n\n", balance)
@@ -110,6 +109,8 @@ func (bc *Blockchain) CopyTransactionPool() []*Transaction {
 		if txn.From != constants.BLOCKCHAIN_AIRDROP_ADDRESS {
 			if senderBalance < int(txn.Value) {
 				txn.Status = constants.STATUS_FAILED
+			} else {
+				txn.Status = constants.STATUS_SUCCESS
 			}
 		}
 		t = append(t, txn)
@@ -139,8 +140,7 @@ func (bc *Blockchain) ProofOfWork() (int, []*Transaction) {
 func (bc *Blockchain) Mining() bool {
 	nonce, txns := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
-	block := NewBlock(previousHash, nonce)
-	block.Transactions = txns
+	block := NewBlock(previousHash, nonce, txns)
 	bc.AddBlock(block)
 	return true
 }

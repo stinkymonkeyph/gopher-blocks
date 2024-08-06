@@ -13,7 +13,7 @@ func init() {
 }
 
 func main() {
-	block := blockchain.NewBlock("0x0", 0)
+	block := blockchain.NewBlock("0x0", 0, nil)
 	bc := blockchain.NewBlockchain(block)
 	bc.Airdrop("0x1")
 	bc.Mining()

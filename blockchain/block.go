@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/stinkymonkeyph/gopher-blocks/constants"
@@ -14,14 +15,25 @@ type Block struct {
 	Timestamp    int64          `json:"timestamp"`
 	Nonce        int            `json:"nonce"`
 	Transactions []*Transaction `json:"transactions"`
+	MerkleRoot   string         `json:"merkle_root"`
 }
 
-func NewBlock(prevHash string, nonce int) *Block {
+func NewBlock(prevHash string, nonce int, txns []*Transaction) *Block {
 	block := new(Block)
 	block.PrevHash = prevHash
 	block.Timestamp = time.Now().UnixMicro()
 	block.Nonce = nonce
-	block.Transactions = []*Transaction{}
+	if txns != nil {
+		block.Transactions = txns
+		leaves := CreateLeafNodes(block.Transactions)
+		merkleTree := BuildMerkleTree(leaves)
+		merkleRoot := merkleTree.Hash
+		block.MerkleRoot = fmt.Sprintf("%x", merkleRoot)
+	} else {
+		block.Transactions = make([]*Transaction, 0)
+		block.MerkleRoot = ""
+	}
+
 	return block
 }
 
