@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"strings"
@@ -18,6 +19,48 @@ type Blockchain struct {
 func (bc *Blockchain) Airdrop(address string) {
 	txn := NewTransaction(constants.BLOCKCHAIN_AIRDROP_ADDRESS, address, constants.AIRDROP_AMOUNT, []byte{})
 	bc.AddTransactionToTransactionPool(txn)
+}
+
+func (bc *Blockchain) CalculateBalance(address string) int {
+	log.Println("Fetch wallet transactions")
+	walletTx := bc.WalletIndex.GetWalletTransactions(address)
+	log.Println("teeest")
+	bal := 0
+
+	bb, _ := json.Marshal(walletTx)
+	log.Println(string(bb))
+
+	for _, txn := range walletTx {
+
+		block := bc.Blocks[txn.BlockIndex]
+		log.Println(block.ToJson())
+
+		proof, err := GenerateMerkleProof(block.Transactions, txn.TransactionIndex)
+		log.Printf("%x", proof)
+
+		if err != nil {
+			log.Panicf(err.Error())
+		}
+
+		merkleRootBytes, err := hex.DecodeString(block.MerkleRoot)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+
+		isValidTx := VerifyTransaction(merkleRootBytes, txn.Transaction, proof)
+
+		if !isValidTx {
+			log.Panic("Invalid tx found while computing balance")
+		}
+
+		if txn.Transaction.From == address && txn.Transaction.Status == constants.STATUS_SUCCESS {
+			bal -= int(txn.Transaction.Value)
+		} else if txn.Transaction.To == address && txn.Transaction.Status == constants.STATUS_SUCCESS {
+			bal += int(txn.Transaction.Value)
+		}
+	}
+
+	return bal
 }
 
 func NewBlockchain(genesisBlock *Block) *Blockchain {
@@ -74,8 +117,6 @@ func (bc *Blockchain) AddBlock(b *Block) {
 
 	for index, txn := range b.Transactions {
 		m[txn.TransactioHash] = true
-		balance := bc.WalletIndex.CalculateBalance(txn.From)
-		log.Printf("\n\nsender balance -> %d \n\n", balance)
 		bc.WalletIndex.AddTransaction(txn.From, nextBlockNumber, index, txn)
 		bc.WalletIndex.AddTransaction(txn.To, nextBlockNumber, index, txn)
 		bc.TransactionIndex.AddTransaction(txn.TransactioHash, index, nextBlockNumber)
@@ -105,8 +146,8 @@ func (bc *Blockchain) LastBlock() *Block {
 func (bc *Blockchain) CopyTransactionPool() []*Transaction {
 	t := make([]*Transaction, 0)
 	for _, txn := range bc.TransactionPool {
-		senderBalance := bc.WalletIndex.CalculateBalance(txn.From)
 		if txn.From != constants.BLOCKCHAIN_AIRDROP_ADDRESS {
+			senderBalance := bc.CalculateBalance(txn.From)
 			if senderBalance < int(txn.Value) {
 				txn.Status = constants.STATUS_FAILED
 			} else {

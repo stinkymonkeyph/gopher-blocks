@@ -72,6 +72,11 @@ func GenerateMerkleProof(transactions []*Transaction, index int) ([][]byte, erro
 	leaves := CreateLeafNodes(transactions)
 	proof := make([][]byte, 0)
 
+	if len(leaves) == 1 {
+		// Special case: only one leaf node
+		return proof, nil
+	}
+
 	for len(leaves) > 1 {
 		var newLevel []*Node
 		for i := 0; i < len(leaves); i += 2 {
