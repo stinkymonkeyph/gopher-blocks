@@ -22,9 +22,7 @@ func (bc *Blockchain) Airdrop(address string) {
 }
 
 func (bc *Blockchain) CalculateBalance(address string) int {
-	log.Println("Fetch wallet transactions")
 	walletTx := bc.WalletIndex.GetWalletTransactions(address)
-	log.Println("teeest")
 	bal := 0
 
 	bb, _ := json.Marshal(walletTx)
