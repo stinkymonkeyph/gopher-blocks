@@ -106,10 +106,12 @@ func (bc *Blockchain) AddTransactionToTransactionPool(txn *Transaction) {
 	}
 }
 
-func (bc *Blockchain) AddBlock(b *Block) {
-	m := map[string]bool{}
-
+func (bc *Blockchain) AddBlock(nonce int, txns []*Transaction) {
 	nextBlockNumber := len(bc.Blocks)
+
+	b := NewBlock(bc.LastBlock().Hash(), nextBlockNumber, nonce, txns)
+
+	m := map[string]bool{}
 
 	if b.PrevHash != bc.LastBlock().Hash() {
 		log.Panic("Trying to add an invalid block, halting entire process")
@@ -182,8 +184,6 @@ func (bc *Blockchain) ProofOfWork() (int, []*Transaction) {
 
 func (bc *Blockchain) Mining() bool {
 	nonce, txns := bc.ProofOfWork()
-	previousHash := bc.LastBlock().Hash()
-	block := NewBlock(previousHash, len(bc.Blocks), nonce, txns)
-	bc.AddBlock(block)
+	bc.AddBlock(nonce, txns)
 	return true
 }
