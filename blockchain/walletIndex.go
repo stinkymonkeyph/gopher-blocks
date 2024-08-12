@@ -7,7 +7,7 @@ import (
 )
 
 type WalletTransactionIndex struct {
-	BlockHeight      int          `json:"block_height"`
+	BlockIndex       int          `json:"block_index"`
 	TransactionIndex int          `json:"transaction_index"`
 	Transaction      *Transaction `json:"transactions"`
 }
@@ -22,18 +22,18 @@ func NewWalletIndex() *WalletIndex {
 	}
 }
 
-func (w *WalletIndex) AddTransaction(address string, blockHeight int, txIndex int, transaction *Transaction) {
+func (w *WalletIndex) AddTransaction(address string, blockIndex int, txIndex int, transaction *Transaction) {
 	if w.Transactions == nil {
 		w.Transactions = make(map[string][]*WalletTransactionIndex)
 	}
 
 	wti := &WalletTransactionIndex{
-		BlockHeight:      blockHeight,
+		BlockIndex:       blockIndex,
 		TransactionIndex: txIndex,
 		Transaction:      transaction,
 	}
 
-	log.Printf("Adding transaction: Address=%s, BlockHeight=%d, TxIndex=%d", address, blockHeight, txIndex)
+	log.Printf("Adding transaction: Address=%s, BlockIndex=%d, TxIndex=%d", address, blockIndex, txIndex)
 	w.Transactions[address] = append(w.Transactions[address], wti)
 	log.Printf("Transactions for %s: %+v", address, w.Transactions[address])
 }

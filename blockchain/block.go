@@ -11,6 +11,7 @@ import (
 )
 
 type Block struct {
+	Number       int            `json:"number"`
 	PrevHash     string         `json:"prevHash"`
 	Timestamp    int64          `json:"timestamp"`
 	Nonce        int            `json:"nonce"`
@@ -18,11 +19,12 @@ type Block struct {
 	MerkleRoot   string         `json:"merkle_root"`
 }
 
-func NewBlock(prevHash string, nonce int, txns []*Transaction) *Block {
+func NewBlock(prevHash string, blockHeight int, nonce int, txns []*Transaction) *Block {
 	block := new(Block)
 	block.PrevHash = prevHash
 	block.Timestamp = time.Now().UnixMicro()
 	block.Nonce = nonce
+	block.Number = blockHeight
 	if txns != nil {
 		block.Transactions = txns
 		leaves := CreateLeafNodes(block.Transactions)

@@ -66,7 +66,7 @@ func (bc *Blockchain) AddTransactionToTransactionPool(txn *Transaction) {
 func (bc *Blockchain) AddBlock(b *Block) {
 	m := map[string]bool{}
 
-	nextBlockHeight := len(bc.Blocks)
+	nextBlockNumber := len(bc.Blocks)
 
 	if b.PrevHash != bc.LastBlock().Hash() {
 		log.Panic("Trying to add an invalid block, halting entire process")
@@ -76,9 +76,9 @@ func (bc *Blockchain) AddBlock(b *Block) {
 		m[txn.TransactioHash] = true
 		balance := bc.WalletIndex.CalculateBalance(txn.From)
 		log.Printf("\n\nsender balance -> %d \n\n", balance)
-		bc.WalletIndex.AddTransaction(txn.From, nextBlockHeight, index, txn)
-		bc.WalletIndex.AddTransaction(txn.To, nextBlockHeight, index, txn)
-		bc.TransactionIndex.AddTransaction(txn.TransactioHash, index, nextBlockHeight)
+		bc.WalletIndex.AddTransaction(txn.From, nextBlockNumber, index, txn)
+		bc.WalletIndex.AddTransaction(txn.To, nextBlockNumber, index, txn)
+		bc.TransactionIndex.AddTransaction(txn.TransactioHash, index, nextBlockNumber)
 	}
 
 	for idx, txn := range bc.TransactionPool {
@@ -112,6 +112,8 @@ func (bc *Blockchain) CopyTransactionPool() []*Transaction {
 			} else {
 				txn.Status = constants.STATUS_SUCCESS
 			}
+		} else {
+			txn.Status = constants.STATUS_SUCCESS
 		}
 		t = append(t, txn)
 	}
@@ -140,7 +142,7 @@ func (bc *Blockchain) ProofOfWork() (int, []*Transaction) {
 func (bc *Blockchain) Mining() bool {
 	nonce, txns := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash()
-	block := NewBlock(previousHash, nonce, txns)
+	block := NewBlock(previousHash, len(bc.Blocks), nonce, txns)
 	bc.AddBlock(block)
 	return true
 }
